@@ -31,16 +31,17 @@ class Game {
     this.cameraFade = 0.05;
     this.mute = false;
     this.collect = [];
+    this.discovered = false;
 
     this.messages = {
       text: ["Welcome to Robbie Run & Dance", "GOOD LUCK!"],
       index: 0
     };
 
-    if (localStorage && !this.debug) {
-      //const levelIndex = Number(localStorage.getItem('levelIndex'));
-      //if (levelIndex!=undefined) this.levelIndex = levelIndex;
-    }
+    // if (localStorage && !this.debug) {
+    //   //const levelIndex = Number(localStorage.getItem('levelIndex'));
+    //   //if (levelIndex!=undefined) this.levelIndex = levelIndex;
+    // }
 
     this.container = document.createElement("div");
     this.container.style.height = "100%";
@@ -52,7 +53,8 @@ class Game {
       "jasper-bboy",
       // "jasper-fly-fast",
       // "jasper-fly",
-      "jasper-idle",
+      // "jasper-idle",
+      "jasper-idle0",
       // "jasper-jump-run",
       "jasper-run",
       "jasper-walk",
@@ -65,17 +67,13 @@ class Game {
 
     const options = {
       assets: [
-        // `${this.assetsPath}sfx/gliss.${sfxExt}`,
-        // `${this.assetsPath}sfx/factory.${sfxExt}`,
-        // `${this.assetsPath}sfx/button.${sfxExt}`,
-        // `${this.assetsPath}sfx/door.${sfxExt}`,
-        // `${this.assetsPath}sfx/fan.${sfxExt}`,
+        `${this.assetsPath}sfx/gotfive_loop.${sfxExt}`,
+        `${this.assetsPath}sfx/gotfive_loop2.${sfxExt}`,
+        `${this.assetsPath}sfx/gotfive_jump.${sfxExt}`,
+        `${this.assetsPath}sfx/forest_mix.${sfxExt}`,
         `${this.assetsPath}fbx/environment.fbx`,
-        // `${this.assetsPath}fbx/environment2.fbx`,
-        // `${this.assetsPath}fbx/girl-walk.fbx`,
-        `${this.assetsPath}fbx/jasper-idle.fbx`
-        // `${this.assetsPath}fbx/jasper-idle2.fbx`
-        // `${this.assetsPath}fbx/usb.fbx`
+        // `${this.assetsPath}fbx/jasper-idle.fbx`,
+        `${this.assetsPath}fbx/jasper-idle0.fbx`
       ],
       oncomplete: function() {
         game.init();
@@ -89,7 +87,7 @@ class Game {
 
     this.mode = this.modes.PRELOAD;
 
-    //Onscreen buttons
+    //Onscreen buttons & screens
     document.getElementById("welcome").onclick = function() {
       this.style = "display:none;";
     };
@@ -99,8 +97,14 @@ class Game {
     document.getElementById("camera-btn").onclick = function() {
       game.switchCamera();
     };
-    document.getElementById("heartdance-btn").onclick = function() {
-      game.jasperDance();
+    document.getElementById("heartdance-btn--1").onclick = function() {
+      game.jasperDance1();
+    };
+    document.getElementById("heartdance-btn--2").onclick = function() {
+      game.jasperDance2();
+    };
+    document.getElementById("heartdance-btn--jump").onclick = function() {
+      game.jasperJump();
     };
     document.getElementById("action-btn").onclick = function() {
       game.contextAction();
@@ -116,12 +120,29 @@ class Game {
     const preloader = new Preloader(options);
   }
 
-  jasperDance() {
-    if ((game.action = "jasper-idle")) {
+  jasperDance1() {
+    game.sfx.gotfive_loop2.stop();
+    game.sfx.gotfive_loop.play();
+    if ((game.action = "jasper-idle0")) {
       game.action = "jasper-bboy";
     } else {
-      game.action = "jasper-idle";
+      game.action = "jasper-idle0";
     }
+  }
+
+  jasperDance2() {
+    game.sfx.gotfive_loop.stop();
+    game.sfx.gotfive_loop2.play();
+    if ((game.action = "jasper-idle0")) {
+      game.action = "jasper-bboy-freeze";
+    } else {
+      game.action = "jasper-idle0";
+    }
+  }
+
+  jasperJump() {
+    game.sfx.gotfive_jump.play();
+    game.action = "jasper-jump";
   }
 
   toggleSound() {
@@ -137,12 +158,13 @@ class Game {
     } else {
       // this.sfx.factory.play;
       // this.sfx.fan.play();
+      this.sfx.forest_mix.play();
       btn.innerHTML = '<i class="fas fa-volume-up"></i>';
     }
   }
 
   contextAction() {
-    console.log("contextAction called " + JSON.stringify(this.onAction));
+    // console.log("contextAction called " + JSON.stringify(this.onAction));
     if (this.onAction !== undefined) {
       if (this.onAction.action != undefined) {
         this.action = this.onAction.action;
@@ -154,11 +176,13 @@ class Game {
     if (this.onAction.mode !== undefined) {
       switch (this.onAction.mode) {
         case "collect":
+          game.sfx.gotfive_loop.stop();
+          game.sfx.gotfive_loop2.play();
           this.activeCamera = this.player.cameras.closeup;
           this.collect[this.onAction.index].visible = false;
-
           document.getElementById("winning").style.display = "block";
-
+          document.getElementById("heartdance-btn--2").style.display = "block";
+          this.discovered = true;
           break;
       }
     }
@@ -182,7 +206,12 @@ class Game {
   initSfx() {
     this.sfx = {};
     this.sfx.context = new (window.AudioContext || window.webkitAudioContext)();
-    const list = ["gliss", "door", "factory", "button", "fan"];
+    const list = [
+      "gotfive_loop",
+      "gotfive_loop2",
+      "gotfive_jump",
+      "forest_mix"
+    ];
     const game = this;
     list.forEach(function(item) {
       game.sfx[item] = new SFX({
@@ -192,11 +221,11 @@ class Game {
           ogg: `${game.assetsPath}sfx/${item}.ogg`
         },
         // PLAYS SOUNDS AUTO
-        // loop: item == "factory" || item == "fan",
-        // autoplay: item == "factory" || item == "fan",
-        volume: 0.3
+        loop: item == "forest_mix",
+        autoplay: item == "forest_mix"
       });
     });
+    game.sfx.forest_mix.volume = 0.05;
   }
 
   set activeCamera(object) {
@@ -213,56 +242,98 @@ class Game {
       2000
     );
 
-    let col = 0x605050;
+    // BACKGROUND & FOG
+    let col = 0x151a1c;
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(col);
-    this.scene.fog = new THREE.Fog(col, 500, 1500);
+    this.scene.fog = new THREE.FogExp2(col, 0.00085);
 
-    let light = new THREE.HemisphereLight(0xffffff, 0xff000000);
-    light.position.set(0, 200, 0);
-    this.scene.add(light);
+    //LIGHTS
+    let light1 = new THREE.HemisphereLight(0xffffff, 0x151a1c, 0.209);
+    // let light1 = new THREE.HemisphereLight(0xffffff, 0x151a1c, 0);
+    light1.position.set(0, 200, 0);
+    this.scene.add(light1);
 
-    light = new THREE.DirectionalLight(0xffffff);
-    light.position.set(0, 200, 100);
-    light.castShadow = true;
-    light.shadow.mapSize.width = 2048;
-    light.shadow.mapSize.height = 2048;
-    light.shadow.camera.top = 3000;
-    light.shadow.camera.bottom = -3000;
-    light.shadow.camera.left = -3000;
-    light.shadow.camera.right = 3000;
-    light.shadow.camera.far = 3000;
-    this.scene.add(light);
+    let light2 = new THREE.DirectionalLight(0xffffff, 0.209);
+    // let light2 = new THREE.DirectionalLight(0xffffff, 0);
+    light2.position.set(0, 200, 100);
+    light2.castShadow = true;
+    light2.shadow.mapSize.width = 2048;
+    light2.shadow.mapSize.height = 2048;
+    light2.shadow.camera.top = 3000;
+    light2.shadow.camera.bottom = -3000;
+    light2.shadow.camera.left = -3000;
+    light2.shadow.camera.right = 3000;
+    light2.shadow.camera.far = 3000;
+    this.scene.add(light2);
 
-    // ground
-    var mesh = new THREE.Mesh(
-      new THREE.PlaneBufferGeometry(2000, 2000),
-      new THREE.MeshPhongMaterial({
-        color: 0x999999,
-        depthWrite: false
-      })
-    );
-    mesh.rotation.x = -Math.PI / 2;
-    //mesh.position.y = -100;
-    mesh.receiveShadow = true;
-    //this.scene.add( mesh );
+    //LIGHT OBJECTS
+    var lightcolorA = 0xffcd49;
+    var lightcolorB = 0xc40016;
+    var lightcolorC = 0x84c9fa;
+    var lightfloatGeometry = new THREE.BoxBufferGeometry(8, 8, 8);
+    var lightfloatMaterialA = new THREE.MeshBasicMaterial({
+      color: lightcolorA
+    });
+    var lightfloatMaterialB = new THREE.MeshBasicMaterial({
+      color: lightcolorB
+    });
+    var lightfloatMaterialC = new THREE.MeshBasicMaterial({
+      color: lightcolorC
+    });
 
-    var grid = new THREE.GridHelper(2000, 40, 0x000000, 0x000000);
-    //grid.position.y = -100;
-    grid.material.opacity = 0.2;
-    grid.material.transparent = true;
-    //this.scene.add( grid );
+    let lightfloat1 = new THREE.PointLight(lightcolorA, 1, 14000);
+    lightfloat1.position.set(-402, -250, -7);
+    this.scene.add(lightfloat1);
+    var lightcube1 = new THREE.Mesh(lightfloatGeometry, lightfloatMaterialA);
+    lightcube1.position.set(-402, -250, -7);
+    this.scene.add(lightcube1);
 
-    // model
+    let lightfloat2 = new THREE.PointLight(lightcolorB, 1, 14000);
+    lightfloat2.position.set(-2422, 94, 4506);
+    this.scene.add(lightfloat2);
+    var lightcube2 = new THREE.Mesh(lightfloatGeometry, lightfloatMaterialB);
+    lightcube2.position.set(-2422, 94, 4506);
+    this.scene.add(lightcube2);
+
+    let lightfloat3 = new THREE.PointLight(lightcolorC, 1, 14000);
+    lightfloat3.position.set(2747, 650, -32);
+    this.scene.add(lightfloat3);
+    var lightcube3 = new THREE.Mesh(lightfloatGeometry, lightfloatMaterialC);
+    lightcube3.position.set(2747, 650, -32);
+    this.scene.add(lightcube3);
+
+    let lightfloat4 = new THREE.PointLight(lightcolorA, 1, 14000);
+    lightfloat4.position.set(-2984, -510, 2935);
+    this.scene.add(lightfloat4);
+    var lightcube4 = new THREE.Mesh(lightfloatGeometry, lightfloatMaterialA);
+    lightcube4.position.set(-2984, -510, 2935);
+    this.scene.add(lightcube4);
+
+    let lightfloat5 = new THREE.PointLight(lightcolorB, 1, 14000);
+    lightfloat5.position.set(1740, -40, 1365);
+    this.scene.add(lightfloat5);
+    var lightcube5 = new THREE.Mesh(lightfloatGeometry, lightfloatMaterialB);
+    lightcube5.position.set(1740, -40, 1365);
+    this.scene.add(lightcube5);
+
+    let lightfloat6 = new THREE.PointLight(lightcolorC, 1, 14000);
+    lightfloat6.position.set(2861, 620, -3622);
+    this.scene.add(lightfloat6);
+    var lightcube6 = new THREE.Mesh(lightfloatGeometry, lightfloatMaterialC);
+    lightcube6.position.set(2861, 620, -3622);
+    this.scene.add(lightcube6);
+
+    //MODEL
     const loader = new THREE.FBXLoader();
     const game = this;
 
     loader.load(
-      `${this.assetsPath}fbx/jasper-idle.fbx`,
+      `${this.assetsPath}fbx/jasper-idle0.fbx`,
       function(object) {
         object.mixer = new THREE.AnimationMixer(object);
         object.mixer.addEventListener("finished", function(e) {
-          game.action = "jasper-idle";
+          game.action = "jasper-idle0";
           if (game.player.cameras.active == game.player.cameras.collect) {
             game.activeCamera = game.player.cameras.back;
           }
@@ -282,8 +353,9 @@ class Game {
         });
 
         //initial start position & direction
-        object.position.set(-700, 0, 0);
-        object.rotation.y = Math.PI / 2;
+
+        object.position.set(-1913, -628, 1223);
+        object.rotation.y = -Math.PI / 3;
 
         game.scene.add(object);
         game.player.object = object;
@@ -390,26 +462,26 @@ class Game {
     );
   }
 
-  createDummyEnvironment() {
-    const env = new THREE.Group();
-    env.name = "Environment";
-    this.scene.add(env);
+  // createDummyEnvironment() {
+  //   const env = new THREE.Group();
+  //   env.name = "Environment";
+  //   this.scene.add(env);
 
-    const geometry = new THREE.BoxBufferGeometry(150, 150, 150);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffff00
-    });
+  //   const geometry = new THREE.BoxBufferGeometry(150, 150, 150);
+  //   const material = new THREE.MeshBasicMaterial({
+  //     color: 0xffff00
+  //   });
 
-    for (let x = -1000; x < 1000; x += 300) {
-      for (let z = -1000; z < 1000; z += 300) {
-        const block = new THREE.Mesh(geometry, material);
-        block.position.set(x, 75, z);
-        env.add(block);
-      }
-    }
+  //   for (let x = -1000; x < 1000; x += 300) {
+  //     for (let z = -1000; z < 1000; z += 300) {
+  //       const block = new THREE.Mesh(geometry, material);
+  //       block.position.set(x, 75, z);
+  //       env.add(block);
+  //     }
+  //   }
 
-    this.environmentProxy = env;
-  }
+  //   this.environmentProxy = env;
+  // }
 
   playerControl(forward, turn) {
     //console.log(`playerControl(${forward}), ${turn}`);
@@ -445,7 +517,7 @@ class Game {
         this.player.action == "jasper-walk" ||
         this.player.action == "jasper-run"
       )
-        this.action = "jasper-idle";
+        this.action = "jasper-idle0";
     }
   }
 
@@ -490,7 +562,7 @@ class Game {
           game.loadNextAnim(loader);
         } else {
           delete game.anims;
-          game.action = "jasper-idle";
+          game.action = "jasper-idle0";
           game.initPlayerPosition();
           game.mode = game.modes.ACTIVE;
           const overlay = document.getElementById("overlay");
@@ -731,34 +803,33 @@ class Game {
     this.actionBtn.style = "display:none;";
     let trigger = false;
 
-    if (this.doors !== undefined) {
-      // this.doors.forEach(function(door) {
-      //   if (
-      //     game.player.object.position.distanceTo(door.trigger.position) < 100
-      //   ) {
-      //     game.actionBtn.style = "display:block;";
-      //     game.onAction = {
-      //       action: "push-button",
-      //       mode: "open-doors",
-      //       index: 0
-      //     };
-      //     trigger = true;
-      //   }
-      // });
-    }
+    // if (this.doors !== undefined) {
+    //   this.doors.forEach(function(door) {
+    //     if (
+    //       game.player.object.position.distanceTo(door.trigger.position) < 100
+    //     ) {
+    //       game.actionBtn.style = "display:block;";
+    //       game.onAction = {
+    //         action: "push-button",
+    //         mode: "open-doors",
+    //         index: 0
+    //       };
+    //       trigger = true;
+    //     }
+    //   });
+    // }
 
     if (this.collect !== undefined && !trigger) {
       this.collect.forEach(function(object) {
         if (
           object.visible &&
-          game.player.object.position.distanceTo(object.position) < 100
+          game.player.object.position.distanceTo(object.position) < 125
         ) {
           game.actionBtn.style = "display:block;";
           game.onAction = {
             action: "jasper-bboy-freeze",
             mode: "collect",
             index: 0
-            // src: "usb.jpg"
           };
           trigger = true;
         }
@@ -766,6 +837,37 @@ class Game {
     }
 
     if (!trigger) delete this.onAction;
+
+    //POINTLIGHTS
+    if (this.scene.children !== undefined && this.clock !== undefined) {
+      for (var i = 2; i < 14; i++) {
+        let posCube = this.scene.children[i];
+        posCube.position.y += 0.5 * Math.sin(this.clock.elapsedTime);
+        posCube.rotateX(dt * 0.927);
+        posCube.rotateY(dt * -0.464);
+        posCube.rotateZ(dt * -0.618);
+      }
+    }
+
+    // let lightfloat6 = new THREE.PointLight(lightcolorC, 1, 10000);
+    // lightfloat6.position.set(2861, 620, -3622);
+    // this.scene.add(lightfloat6);
+    // var lightcube6 = new THREE.Mesh(lightfloatGeometry, lightfloatMaterialC);
+    // lightcube6.position.set(2861, 620, -3622);
+    // this.scene.add(lightcube6);
+
+    if (game.player.object !== undefined) {
+      // console.log(game.player.object.position);
+      document.getElementById("test-coordinates-x").innerHTML = Math.trunc(
+        game.player.object.position.x
+      );
+      document.getElementById("test-coordinates-y").innerHTML = Math.trunc(
+        game.player.object.position.y
+      );
+      document.getElementById("test-coordinates-z").innerHTML = Math.trunc(
+        game.player.object.position.z
+      );
+    }
 
     // if (this.fans !== undefined) {
     //   let vol = 0;
@@ -1267,12 +1369,27 @@ class JoyStick {
         this.domElement.addEventListener("mousedown", function(evt) {
           joystick.tap(evt);
         });
+
         //ADD LISTENER FOR KEYBOARD USERS
         document.addEventListener("keydown", function(event) {
-          //console.log(event.keyCode);
-          event.keyCode == 32
-            ? (game.action = "jasper-jump")
-            : (game.action = "jasper-bboy");
+          // console.log(event.keyCode);
+          let key = event.keyCode;
+          switch (key) {
+            //SPACE
+            case 32:
+              game.jasperJump();
+              break;
+            //"A" or CNTRL
+            case 65:
+            case 17:
+              game.jasperDance1();
+              break;
+            //"S" or ALT
+            case 83:
+            case 18:
+              if (game.discovered !== false) game.jasperDance2();
+              break;
+          }
         });
       }
     }
