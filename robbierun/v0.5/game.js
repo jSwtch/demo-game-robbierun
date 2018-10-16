@@ -1502,7 +1502,7 @@ class Preloader {
       const barBase = document.createElement("div");
       barBase.style.background = "#aaa";
       barBase.style.width = "50%";
-      barBase.style.maxWidth = "50%";
+      // barBase.style.maxWidth = "50%";
       barBase.style.minWidth = "250px";
       barBase.style.borderRadius = "10px";
       barBase.style.height = "15px";
