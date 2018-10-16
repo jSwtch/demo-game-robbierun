@@ -123,7 +123,7 @@ class Game {
   jasperDance1() {
     game.sfx.gotfive_loop2.stop();
     game.sfx.gotfive_loop.play();
-    if ((game.action = "jasper-idle0")) {
+    if (game.action == "jasper-idle0") {
       game.action = "jasper-bboy";
     } else {
       game.action = "jasper-idle0";
@@ -133,7 +133,7 @@ class Game {
   jasperDance2() {
     game.sfx.gotfive_loop.stop();
     game.sfx.gotfive_loop2.play();
-    if ((game.action = "jasper-idle0")) {
+    if (game.action == "jasper-idle0") {
       game.action = "jasper-bboy-freeze";
     } else {
       game.action = "jasper-idle0";
