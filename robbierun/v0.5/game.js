@@ -1574,7 +1574,12 @@ class Preloader {
     xobj.onprogress = function(e) {
       const asset = loader.assets[url];
       asset.loaded = e.loaded;
-      asset.total = e.total;
+      asset.total = e.lengthComputable
+        ? e.total
+        : parseInt(
+            e.target.getResponseHeader("x-decompressed-content-length"),
+            10
+          );
       loader.onprogress(loader.progress);
     };
     xobj.send(null);
